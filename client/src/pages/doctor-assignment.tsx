@@ -23,7 +23,7 @@ const doctors = [
   },
   {
     id: "dr-johnson",
-    name: "Dr. Manoj Gupta", 
+    name: "Dr. Manoj Gupta",
     specialty: "Cardiology",
     department: "Cardiology",
     conditions: ["chest pain", "cardiac", "heart", "blood pressure", "hypertension", "cardiovascular"],
@@ -34,7 +34,7 @@ const doctors = [
     id: "dr-williams",
     name: "Dr. Kavita Jain",
     specialty: "Internal Medicine",
-    department: "Internal Medicine", 
+    department: "Internal Medicine",
     conditions: ["fever", "infection", "diabetes", "internal", "general medicine", "chronic"],
     avatar: "KJ",
     status: "available"
@@ -51,7 +51,7 @@ const doctors = [
   {
     id: "dr-davis",
     name: "Dr. Lisa Davis",
-    specialty: "Neurology", 
+    specialty: "Neurology",
     department: "Neurology",
     conditions: ["headache", "stroke", "neurological", "seizure", "brain", "nerve"],
     avatar: "LD",
@@ -79,13 +79,18 @@ const priorityConfig = {
 export default function DoctorAssignment() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedAssignments, setSelectedAssignments] = useState<{[patientId: string]: string}>({});
+  const [selectedAssignments, setSelectedAssignments] = useState<{ [patientId: string]: string }>({});
 
   // Fetch patients in queue
-  const { data: queueData, isLoading } = useQuery({
+  const { data: queueData = [], isLoading } = useQuery<Patient[]>({
     queryKey: ["/api/patients/queue"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/patients/queue");
+      return res.json() as Promise<Patient[]>;
+    },
     refetchInterval: 5000,
   });
+
 
   // Fetch busy doctors
   const { data: busyDoctors = [] } = useQuery<string[]>({
@@ -105,9 +110,9 @@ export default function DoctorAssignment() {
   // Assign patient to doctor mutation
   const assignPatientMutation = useMutation({
     mutationFn: async ({ patientId, doctorId }: { patientId: string; doctorId: string }) => {
-      const response = await apiRequest("PATCH", `/api/patients/${patientId}/assign`, { 
+      const response = await apiRequest("PATCH", `/api/patients/${patientId}/assign`, {
         doctorId,
-        status: "in_treatment" 
+        status: "in_treatment"
       });
       return response.json();
     },
@@ -122,7 +127,7 @@ export default function DoctorAssignment() {
       });
       // Clear the selection for this patient
       setSelectedAssignments(prev => {
-        const updated = {...prev};
+        const updated = { ...prev };
         delete updated[variables.patientId];
         return updated;
       });
@@ -180,12 +185,12 @@ export default function DoctorAssignment() {
     return doctors.filter(doctor => {
       // Filter out busy doctors
       const isBusy = busyDoctors.includes(doctor.id);
-      
+
       // Check if doctor specializes in the condition
-      const isSpecialist = doctor.conditions.some(condition => 
+      const isSpecialist = doctor.conditions.some(condition =>
         lowerDiagnosis.includes(condition)
       );
-      
+
       return isSpecialist && !isBusy;
     });
   };
@@ -206,7 +211,7 @@ export default function DoctorAssignment() {
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-64"></div>
             <div className="grid gap-4">
-              {[1,2,3].map(i => (
+              {[1, 2, 3].map(i => (
                 <div key={i} className="h-32 bg-muted rounded"></div>
               ))}
             </div>
@@ -227,8 +232,8 @@ export default function DoctorAssignment() {
               <p className="text-muted-foreground">Assign patients to appropriate doctors based on their medical conditions</p>
             </div>
             <Link href="/">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex items-center space-x-2"
                 data-testid="back-to-dashboard"
               >
@@ -295,9 +300,9 @@ export default function DoctorAssignment() {
                   const priority = priorityConfig[patient.triageLevel as keyof typeof priorityConfig];
                   const recommendedDoctors = getRecommendedDoctors(patient.diagnosis);
                   const selectedDoctor = selectedAssignments[patient.id];
-                  
+
                   return (
-                    <div 
+                    <div
                       key={patient.id}
                       className="border border-border rounded-lg p-6 space-y-4 bg-card"
                       data-testid={`assignment-patient-${patient.id}`}
@@ -342,8 +347,8 @@ export default function DoctorAssignment() {
                       <div className="flex items-center justify-between space-x-4">
                         <div className="flex-1">
                           <label className="text-sm font-medium mb-2 block">Assign to Doctor</label>
-                          <Select 
-                            value={selectedDoctor || ""} 
+                          <Select
+                            value={selectedDoctor || ""}
                             onValueChange={(value) => handleDoctorSelect(patient.id, value)}
                             data-testid={`doctor-select-${patient.id}`}
                           >
@@ -381,7 +386,7 @@ export default function DoctorAssignment() {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <Button
                           onClick={() => handleAssignPatient(patient.id)}
                           disabled={!selectedDoctor || assignPatientMutation.isPending}
@@ -419,9 +424,9 @@ export default function DoctorAssignment() {
                 {assignedPatients.map((patient: Patient) => {
                   const priority = priorityConfig[patient.triageLevel as keyof typeof priorityConfig];
                   const assignedDoctor = doctors.find(d => d.id === patient.assignedDoctorId);
-                  
+
                   return (
-                    <div 
+                    <div
                       key={patient.id}
                       className="border border-border rounded-lg p-4 space-y-3 bg-card"
                       data-testid={`treatment-patient-${patient.id}`}
@@ -440,7 +445,7 @@ export default function DoctorAssignment() {
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-4">
                           <div className="text-right">
                             <p className="text-sm font-medium text-muted-foreground">Diagnosis:</p>
@@ -448,7 +453,7 @@ export default function DoctorAssignment() {
                               {patient.diagnosis}
                             </p>
                           </div>
-                          
+
                           <Button
                             onClick={() => completePatientMutation.mutate(patient.id)}
                             disabled={completePatientMutation.isPending}

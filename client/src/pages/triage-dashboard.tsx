@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import PatientIntakeForm from "@/components/patient-intake-form";
 import TriageQueue from "@/components/triage-queue";
 import StatsPanel from "@/components/stats-panel";
-
+import type { Patient } from "@shared/schema";
 export default function TriageDashboard() {
   const [currentTime, setCurrentTime] = useState("");
 
@@ -21,9 +21,14 @@ export default function TriageDashboard() {
   }, []);
 
   // Fetch queue data with polling
-  const { data: queueData, refetch: refetchQueue } = useQuery({
+  const { data: queueData = [], refetch: refetchQueue } = useQuery<Patient[]>({
     queryKey: ["/api/patients/queue"],
-    refetchInterval: 5000, // Poll every 5 seconds
+    queryFn: async () => {
+      const res = await fetch("/api/patients/queue");
+      if (!res.ok) throw new Error("Failed to fetch queue data");
+      return res.json() as Promise<Patient[]>;
+    },
+    refetchInterval: 5000,
   });
 
   // Fetch stats data with polling
@@ -31,6 +36,7 @@ export default function TriageDashboard() {
     queryKey: ["/api/patients/stats"],
     refetchInterval: 5000,
   });
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,8 +55,8 @@ export default function TriageDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/doctors">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
                   data-testid="doctor-assignment-link"
                 >
@@ -69,8 +75,8 @@ export default function TriageDashboard() {
 
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Statistics Panel */}
-        <StatsPanel stats={statsData} />
-        
+        <StatsPanel stats={statsData as any} />
+
         {/* Patient Intake Form - Wider container */}
         <div className="mt-8 max-w-4xl mx-auto">
           <PatientIntakeForm onPatientAdded={() => refetchQueue()} />
@@ -81,7 +87,7 @@ export default function TriageDashboard() {
           <TriageQueue patients={queueData || []} />
         </div>
       </div>
-      
+
       {/* Professional Footer */}
       <footer className="bg-card border-t border-border mt-16">
         <div className="container mx-auto px-6 py-12 max-w-7xl">
@@ -98,7 +104,7 @@ export default function TriageDashboard() {
                 Advanced emergency department management system powered by artificial intelligence for optimal patient care and resource allocation.
               </p>
             </div>
-            
+
             {/* Quick Links */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Quick Access</h4>
@@ -109,7 +115,7 @@ export default function TriageDashboard() {
                 <p className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">Emergency Protocols</p>
               </div>
             </div>
-            
+
             {/* Medical Info */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Medical Standards</h4>
@@ -120,7 +126,7 @@ export default function TriageDashboard() {
                 <p className="text-sm text-muted-foreground">Clinical Decision Support</p>
               </div>
             </div>
-            
+
             {/* Contact & Support */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide">Support</h4>
@@ -132,7 +138,7 @@ export default function TriageDashboard() {
               </div>
             </div>
           </div>
-          
+
           {/* Bottom Bar */}
           <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground">
