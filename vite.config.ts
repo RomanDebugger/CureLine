@@ -4,39 +4,44 @@ import path from "path";
 import { fileURLToPath } from "url";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-// polyfill __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
+export default defineConfig(async () => ({
   plugins: [
     react(),
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-      process.env.REPL_ID !== undefined
+    ...(process.env.NODE_ENV !== "production" && process.env.REPL_ID
       ? [
-        await import("@replit/vite-plugin-cartographer").then((m) =>
-          m.cartographer()
-        ),
+        (await import("@replit/vite-plugin-cartographer")).cartographer(),
       ]
       : []),
   ],
+
+  root: path.resolve(__dirname, "client"),
+
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
+      "@": path.resolve(__dirname, "client/src"),
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
-  root: path.resolve(__dirname, "client"),
+
+
   build: {
-    outDir: path.resolve(__dirname, "dist/client"),
+    outDir: path.resolve(__dirname, "dist", "client"),
     emptyOutDir: true,
   },
+
   server: {
+    port: 5173,
+    strictPort: true,
     fs: {
-      strict: true,
-      deny: ["**/.*"],
+      allow: [
+        path.resolve(__dirname, "client"),
+        path.resolve(__dirname, "shared"),
+      ],
     },
   },
-});
+}));
